@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!--
+        ╔══════════════════════════════════════════════════════════════╗
+        ║  SHIMBOUNCER STANDALONE — No server required                 ║
+        ║                                                              ║
+        ║  Works on any static hosting (GitHub Pages, Netlify, etc.)   ║
+        ║  Server-side detection is not available, so this version     ║
+        ║  relies entirely on client-side UA sniffing. It cannot       ║
+        ║  detect Instagram DMs on desktop (identical UA to Chrome).   ║
+        ║                                                              ║
+        ║  For full detection, use the Worker version (worker.js).     ║
+        ╚══════════════════════════════════════════════════════════════╝
+    -->
+
+    <script>
+    // ═══════════════════ USER CONFIG ═══════════════════
+    var SHIMMY_DESTINATION = 'https://onlyfans.com/yourprofile';
+    // ══════════════════════════════════════════════════════
+    </script>
+
+    <!-- Decoy OG tags — customize these to look like whatever you want -->
+    <title>My Portfolio — Creative Works</title>
+    <meta name="description" content="Check out my latest creative projects and collaborations.">
+    <meta property="og:title" content="My Portfolio — Creative Works">
+    <meta property="og:description" content="Check out my latest creative projects and collaborations.">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="My Portfolio — Creative Works">
+    <meta name="twitter:description" content="Check out my latest creative projects and collaborations.">
+    <meta name="robots" content="noindex, nofollow">
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        :root{
+            --bg:#0a0a0f;--bg2:#1a1a25;
+            --t1:#e8e8ef;--t2:#8888a0;
+            --acc:#6c63ff;--bdr:rgba(255,255,255,0.06);
+        }
+        html,body{height:100%;font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var(--t1);-webkit-font-smoothing:antialiased}
+
+        /* Bounce overlay */
+        #bounce{position:fixed;inset:0;z-index:10000;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;gap:20px}
+        #bounce.on{display:flex}
+        .spin{width:40px;height:40px;border:3px solid var(--bdr);border-top-color:var(--acc);border-radius:50%;animation:s .8s linear infinite}
+        @keyframes s{to{transform:rotate(360deg)}}
+        .btxt{font-size:14px;color:var(--t2)}
+
+        /* Decoy page */
+        .dp{min-height:100vh;display:flex;flex-direction:column}
+        .dh{padding:20px 24px;border-bottom:1px solid var(--bdr);backdrop-filter:blur(20px);background:rgba(10,10,15,0.8);position:sticky;top:0;z-index:100}
+        .dhi{max-width:1000px;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+        .dl{font-size:18px;font-weight:700;letter-spacing:-0.02em;background:linear-gradient(135deg,var(--acc),#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+        .dn{display:flex;gap:24px}
+        .dn a{color:var(--t2);text-decoration:none;font-size:14px;font-weight:500}
+        .dhr{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:80px 24px;max-width:700px;margin:0 auto}
+        .dhr h1{font-size:clamp(28px,5vw,48px);font-weight:700;letter-spacing:-0.03em;line-height:1.1;margin-bottom:16px;background:linear-gradient(135deg,var(--t1),var(--t2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+        .dhr p{font-size:16px;line-height:1.6;color:var(--t2);max-width:480px;margin-bottom:32px}
+        .dg{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;width:100%;max-width:700px;margin:0 auto;padding:0 24px 60px}
+        .dc{background:var(--bg2);border:1px solid var(--bdr);border-radius:12px;padding:24px}
+        .dc h3{font-size:14px;font-weight:600;margin-bottom:8px}
+        .dc p{font-size:13px;color:var(--t2);line-height:1.5}
+        .df{padding:24px;text-align:center;font-size:12px;color:var(--t2);border-top:1px solid var(--bdr)}
+        @media(max-width:600px){.dn{display:none}.dg{grid-template-columns:1fr}}
+    </style>
+
+    <script>
+    (function(){
+        'use strict';
+
+        var DEST = SHIMMY_DESTINATION;
+        var ENC = encodeURIComponent(DEST);
+        var ua = navigator.userAgent || '';
+
+        // ── BOT CHECK ──
+        var BOTS = 'facebookexternalhit|facebot|twitterbot|linkedinbot|slackbot|telegrambot|whatsapp|discordbot|pinterestbot|redditbot|googlebot|bingbot|yandexbot|baiduspider|duckduckbot|applebot|headlesschrome|phantomjs|puppeteer|playwright|selenium|wget|curl|python-requests|python-urllib|go-http-client|node-fetch|axios|postmanruntime|semrushbot|ahrefsbot|mj12bot|dotbot|petalbot|prefetch|prerender';
+        if (new RegExp(BOTS, 'i').test(ua)) return; // Bot → decoy visible
+
+        // ── PLATFORM DETECT ──
+        function plat() {
+            if (/Barcelona/i.test(ua)) return 'threads';
+            if (/MessengerForiOS|FB_IAB\/MESSENGER/i.test(ua)) return 'messenger';
+            if (/FBAN|FBAV|FB_IAB/i.test(ua)) return 'facebook';
+            if (/Instagram/i.test(ua)) return 'instagram';
+            if (/TikTok|musical_ly|Bytedance|BytedanceWebview/i.test(ua)) return 'tiktok';
+            if (/TwitterAndroid|Twitter\//i.test(ua)) return 'twitter';
+            if (/Snapchat/i.test(ua)) return 'snapchat';
+            if (/LinkedInApp/i.test(ua)) return 'linkedin';
+            if (/Pinterest/i.test(ua)) return 'pinterest';
+            if (/Reddit/i.test(ua)) return 'reddit';
+            if (/Telegram/i.test(ua)) return 'telegram';
+            if (/\bLine\//i.test(ua)) return 'line';
+            if (/WhatsApp/i.test(ua)) return 'whatsapp';
+            if (/Discord/i.test(ua)) return 'discord';
+            if (/MicroMessenger/i.test(ua)) return 'wechat';
+            if (/KAKAOTALK/i.test(ua)) return 'kakao';
+            // Android generic webview: "wv)" marker + Android UA
+            if (/; wv\)/i.test(ua) && /Android/i.test(ua) && !/SamsungBrowser|Firefox|OPR|Edg|Brave/i.test(ua)) return 'webview';
+            // IABMV marker (Meta in-app browser)
+            if (/IABMV/i.test(ua)) return 'webview';
+            return null;
+        }
+
+        var p = plat();
+        var iOS = /iPhone|iPad|iPod/i.test(ua);
+        var android = /Android/i.test(ua);
+
+        // ── REAL BROWSER → Passthrough ──
+        if (!p) {
+            window.location.replace(DEST);
+            return;
+        }
+
+        // ── IN-APP → Bounce ──
+        function go(fn) {
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', fn);
+            } else { fn(); }
+        }
+
+        go(function(){
+            var ov = document.getElementById('bounce');
+            if (ov) ov.classList.add('on');
+
+            // Meta scheme escape (Instagram/Threads iOS)
+            function metaScheme() {
+                var s = null;
+                if (p === 'instagram') s = 'instagram://extbrowser/?url=';
+                if (p === 'threads') s = 'barcelona://extbrowser/?url=';
+                if (!s || !iOS) return false;
+                try { window.location.replace(s + ENC); return true; } catch(e) { return false; }
+            }
+
+            // Android Intent URL
+            function intent() {
+                if (!android) return false;
+                var iurl;
+                try {
+                    var u = new URL(DEST);
+                    iurl = 'intent://' + u.host + u.pathname + u.search + u.hash
+                        + '#Intent;scheme=' + u.protocol.replace(':','')
+                        + ';action=android.intent.action.VIEW'
+                        + ';S.browser_fallback_url=' + ENC + ';end';
+                } catch(e) {
+                    iurl = 'intent://' + DEST.replace(/^https?:\/\//, '')
+                        + '#Intent;scheme=https;action=android.intent.action.VIEW'
+                        + ';S.browser_fallback_url=' + ENC + ';end';
+                }
+                var a = document.createElement('a');
+                a.href = iurl;
+                a.style.cssText = 'position:fixed;inset:0;opacity:0;z-index:99999';
+                document.body.appendChild(a);
+                a.click();
+                setTimeout(function(){ try { window.location.href = iurl; } catch(e){} }, 200);
+                return true;
+            }
+
+            // Google redirect (last resort)
+            function google() {
+                window.location.href = 'https://www.google.com/url?q=' + ENC + '&sa=D&source=web&usg=redirect';
+            }
+
+            // Execution
+            var ok = false;
+
+            if ((p === 'instagram' || p === 'threads') && iOS) {
+                ok = metaScheme();
+                if (ok) { setTimeout(function(){ if (!document.hidden) google(); }, 2500); return; }
+            }
+
+            if (android) {
+                ok = intent();
+                if (ok) { setTimeout(function(){ if (!document.hidden) google(); }, 3000); return; }
+            }
+
+            if (p === 'twitter' && iOS) {
+                window.location.replace(DEST);
+                return;
+            }
+
+            // Fallback for everything else
+            google();
+
+            // Ultimate fallback: show decoy after 8s
+            setTimeout(function(){
+                if (!document.hidden) {
+                    var ov2 = document.getElementById('bounce');
+                    if (ov2) ov2.style.display = 'none';
+                }
+            }, 8000);
+        });
+    })();
+    </script>
+</head>
+<body>
+    <!-- Bounce overlay -->
+    <div id="bounce">
+        <div class="spin"></div>
+        <div class="btxt">Opening in your browser…</div>
+    </div>
+
+    <!-- Decoy page — bots, no-JS, and bounce-failure users see this -->
+    <div class="dp">
+        <header class="dh">
+            <div class="dhi">
+                <div class="dl">Studio</div>
+                <nav class="dn">
+                    <a href="#">Work</a>
+                    <a href="#">About</a>
+                    <a href="#">Contact</a>
+                </nav>
+            </div>
+        </header>
+        <main class="dhr">
+            <h1>Creative Works & Collaborations</h1>
+            <p>Exploring the intersection of design, photography, and digital art. Currently available for select projects and partnerships.</p>
+        </main>
+        <section class="dg">
+            <div class="dc"><h3>Design</h3><p>Brand identity, visual systems, and creative direction for forward-thinking brands.</p></div>
+            <div class="dc"><h3>Photography</h3><p>Editorial and commercial photography with a focus on authentic storytelling.</p></div>
+            <div class="dc"><h3>Digital Art</h3><p>Experimental digital works exploring new mediums and creative technologies.</p></div>
+        </section>
+        <footer class="df">&copy; 2026 Studio. All rights reserved.</footer>
+    </div>
+</body>
+</html>

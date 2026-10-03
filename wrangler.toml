@@ -1,0 +1,14 @@
+name = "shimbouncer"
+main = "worker.js"
+compatibility_date = "2024-09-25"
+compatibility_flags = ["nodejs_compat"]
+
+# Optional: custom domain binding
+# routes = [
+#   { pattern = "yourdomain.com/*", zone_name = "yourdomain.com" }
+# ]
+
+# Optional: KV namespace for analytics/logging
+# [[kv_namespaces]]
+# binding = "SHIMMY_KV"
+# id = "your-kv-namespace-id"
