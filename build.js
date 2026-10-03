@@ -120,13 +120,14 @@ function buildRuntimeConfig() {
             i: b64(DETECTION.os.ios),
             a: b64(DETECTION.os.android),
         },
-        // Intent URL template parts (Android deep-link escape)
+        // Intent URL template parts & helper messages (Android deep-link escape)
         t: {
             pre: b64('intent://'),
             mid: b64('#Intent;scheme='),
             act: b64(';action=android.intent.action.VIEW;S.browser_fallback_url='),
             end: b64(';end'),
             re: b64('^https?://'),
+            tw: b64('Twitter browser blocked automatic open.<br>Tap <b style="color:#a78bfa">\u22ee</b> top right &amp; select <b style="color:#a78bfa">"Open in Chrome / Browser"</b>'),
         },
     };
     for (const [k, v] of Object.entries(DETECTION.schemes)) {
@@ -162,11 +163,11 @@ function buildHtml(encodedConfig) {
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{--c0:#0a0a0f;--c1:#12121a;--c2:#1a1a25;--c3:#e8e8ef;--c4:#8888a0;--c5:#6c63ff;--c6:rgba(255,255,255,.06)}
 html,body{height:100%;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--c0);color:var(--c3);-webkit-font-smoothing:antialiased;overflow-x:hidden}
-.v{position:fixed;inset:0;z-index:10000;background:var(--c0);display:none;flex-direction:column;align-items:center;justify-content:center;gap:20px}
+.v{position:fixed;inset:0;z-index:10000;background:var(--c0);display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;text-align:center}
 .v.on{display:flex}
 .v i{width:40px;height:40px;border:3px solid var(--c6);border-top-color:var(--c5);border-radius:50%;animation:r .8s linear infinite;font-style:normal}
 @keyframes r{to{transform:rotate(360deg)}}
-.v span{font-size:14px;color:var(--c4);letter-spacing:.02em}
+.v span{font-size:15px;font-weight:500;color:var(--c3)}
 .x{min-height:100vh;display:flex;flex-direction:column}
 .h{padding:20px 24px;border-bottom:1px solid var(--c6);backdrop-filter:blur(20px);background:rgba(10,10,15,.8);position:sticky;top:0;z-index:100}
 .hi{max-width:1000px;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
@@ -195,6 +196,9 @@ var p=dp(),ios=new RegExp(_(C.o.i),'i').test(u),and=new RegExp(_(C.o.a),'i').tes
 if(!p){window.location.replace(D);return}
 function go(fn){document.readyState==='loading'?document.addEventListener('DOMContentLoaded',fn):fn()}
 go(function(){var ov=document.getElementById('J');if(ov)ov.classList.add('on');
+function sh(t){var s=document.getElementById('S'),b=document.getElementById('B');
+if(s){s.innerHTML=t||'Tap <b style="color:#a78bfa">\u22ee</b> or <b style="color:#a78bfa">\u2026</b> at top right &amp; select <b style="color:#a78bfa">"Open in Browser"</b>';s.style.display='block'}
+if(b){b.style.display='inline-block';b.onclick=function(){if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(D).then(function(){b.textContent='Copied Link!';setTimeout(function(){b.textContent='Copy Direct Link'},2500)})}else{prompt('Copy link:',D)}}}}
 var sk={};for(var k in C.s)sk[_(k)]=C.s[k];
 function ms(){var s=null;if(p===_(C.p[3][1])&&sk[_(C.p[3][1])])s=_(sk[_(C.p[3][1])]);
 if(p===_(C.p[0][1])&&sk[_(C.p[0][1])])s=_(sk[_(C.p[0][1])]);
@@ -208,14 +212,14 @@ document.body.appendChild(a);a.click();setTimeout(function(){try{window.location
 function gr(){window.location.href=_(C.g)+encodeURIComponent(D)+'&sa=D&source=web&usg=r'}
 var ok=false;
 if((p===_(C.p[3][1])||p===_(C.p[0][1]))&&ios){ok=ms();if(ok){setTimeout(function(){if(!document.hidden)gr()},2500);return}}
-if(and){ok=ni();if(ok){setTimeout(function(){if(!document.hidden)gr()},3000);return}}
-if(p===_(C.p[5][1])&&ios){window.location.replace(D);return}
-gr();
+if(p===_(C.p[5][1])){if(ios){window.location.replace(D);return}if(and){sh(_(C.t.tw));ni();return}}
+if(and){ok=ni();if(ok){setTimeout(function(){if(!document.hidden){sh();if(p!==_(C.p[2][1])&&p!==_(C.p[1][1])){setTimeout(function(){if(!document.hidden)gr()},2000)}}},1500);return}}
+sh();gr();
 setTimeout(function(){if(!document.hidden){var o=document.getElementById('J');if(o)o.style.display='none'}},8000)})}();
 </script>
 </head>
 <body>
-<div class="v" id="J"><i></i><span>Loading\u2026</span></div>
+<div class="v" id="J"><i></i><span id="T">Opening in browser\u2026</span><div id="S" style="display:none;font-size:13px;color:var(--c4);line-height:1.5;max-width:320px;text-align:center;margin-top:4px"></div><button id="B" style="display:none;margin-top:8px;padding:8px 16px;background:rgba(108,99,255,0.15);border:1px solid rgba(108,99,255,0.4);border-radius:20px;color:var(--c3);font-size:13px;cursor:pointer">Copy Direct Link</button></div>
 <div class="x">
 <header class="h"><div class="hi"><div class="l">${esc(d.siteName)}</div><nav class="n">${d.navLinks.map(l => `<a href="#">${esc(l)}</a>`).join('')}</nav></div></header>
 <main class="m"><h1>${esc(d.heroTitle)}</h1><p>${esc(d.heroText)}</p></main>

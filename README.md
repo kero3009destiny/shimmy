@@ -26,8 +26,9 @@ We studied the behavior of deep-linking protocols and the evasion techniques use
 
 **The Challenge:**
 * Some in-app browsers (like Instagram on Android) mask themselves, but they can be detected via specific HTTP headers (like `X-Requested-With`).
-* On iOS, `WKWebView` blocks automatic app handoffs, requiring a user tap, but we can utilize custom deep-link schemes (`instagram://extbrowser`) to force a breakout.
-* On Android, `intent://` URLs with a `S.browser_fallback_url` parameter can force the OS to open the system browser.
+* On iOS, `WKWebView` blocks automatic app handoffs, requiring custom deep-link schemes (`instagram://extbrowser`, `barcelona://extbrowser`) for Meta apps, while Twitter iOS allows direct location replacements.
+* On Android, `intent://` URLs with a `S.browser_fallback_url` parameter force the OS to launch Chrome/system browser. However, Twitter Android WebView frequently blocks custom intent schemes, throwing a system alert *"No app can perform this action"* and keeping users trapped if redirected to Google's fallback URL.
+* **Friction Reduction UX:** To prevent user friction when Twitter or Android WebViews block automatic intent escapes, Shimmy immediately displays explicit, elegant overlay instructions (*"Tap ⋮ top right & select 'Open in Browser'"*) alongside a 1-tap **Copy Direct Link** button, while suppressing broken Google fallback redirects on Twitter.
 * Static analysis tools scan HTML files for suspicious strings (e.g., `onlyfans`, `intent://`, `extbrowser`, `bounce`).
 
 **The Solution:**

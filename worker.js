@@ -251,6 +251,8 @@ function bouncePage(serverDetectedPlatform) {
     <div id="shimmy-bounce-overlay" class="active">
         <div class="bounce-spinner"></div>
         <div class="bounce-text">Opening…</div>
+        <div class="bounce-sub" id="shimmy-bounce-sub" style="display:none"></div>
+        <button class="bounce-btn" id="shimmy-bounce-btn" style="display:none">Copy Direct Link</button>
     </div>
 
     <div id="shimmy-decoy" class="decoy-page" style="display:none;">
@@ -336,6 +338,28 @@ function bounceScript(serverHint) {
         if (el) el.textContent = msg;
     }
 
+    function showManualHelp(text) {
+        var subEl = document.getElementById('shimmy-bounce-sub');
+        var btnEl = document.getElementById('shimmy-bounce-btn');
+        if (subEl) {
+            subEl.innerHTML = text || 'Tap <strong>⋮</strong> or <strong>…</strong> at top right & select <strong>"Open in Browser"</strong>';
+            subEl.style.display = 'block';
+        }
+        if (btnEl) {
+            btnEl.style.display = 'inline-block';
+            btnEl.onclick = function() {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    navigator.clipboard.writeText(DEST).then(function(){
+                        btnEl.textContent = 'Copied Link!';
+                        setTimeout(function(){ btnEl.textContent = 'Copy Direct Link'; }, 2500);
+                    });
+                } else {
+                    prompt('Copy link:', DEST);
+                }
+            };
+        }
+    }
+
     function showDecoy() {
         var overlay = document.getElementById('shimmy-bounce-overlay');
         var decoy = document.getElementById('shimmy-decoy');
@@ -347,7 +371,7 @@ function bounceScript(serverHint) {
     // BOUNCE STRATEGIES
     // ══════════════════════════════════════════════════════════════
 
-    // Strategy 1: Meta extbrowser scheme (Instagram/Threads iOS)
+    // Strategy 1: Meta extbrowser scheme (Instagram/Threads iOS strictly)
     function tryMetaScheme() {
         var scheme = null;
         if (platform === 'instagram') scheme = 'instagram://extbrowser/?url=';
@@ -389,18 +413,15 @@ function bounceScript(serverHint) {
         return true;
     }
 
-    // Strategy 3: Google redirect (last resort)
-    // Opens Google which then redirects to the target. Most in-app browsers
-    // allow Google navigation, and the redirect chain lands in external browser.
+    // Strategy 3: Google redirect (last resort for Meta/TikTok, NOT Twitter)
     function tryGoogleRedirect() {
         window.location.href = 'https://www.google.com/url?q=' + ENCODED_DEST + '&sa=D&source=web&usg=redirect';
         return true;
     }
 
-    // Strategy 4: x.com / Twitter deeplink (opens external browser on some builds)
+    // Strategy 4: Twitter iOS direct
     function tryTwitterOpenUrl() {
         if (!isIOS) return false;
-        // Try direct navigation; Twitter iOS SFSafariViewController may handle it
         window.location.replace(DEST);
         return true;
     }
@@ -409,9 +430,6 @@ function bounceScript(serverHint) {
     // EXECUTION CHAIN
     // ══════════════════════════════════════════════════════════════
 
-    // Safety: if we somehow can't detect an in-app browser but the server
-    // sent us here, try a direct redirect. The worst case is the user
-    // stays on the decoy page (which is safe and looks normal).
     if (!platform) {
         window.location.replace(DEST);
         return;
@@ -419,15 +437,12 @@ function bounceScript(serverHint) {
 
     updateText('Opening in your browser…');
 
-    // ── Per-Platform Escape Chains ──
     var escaped = false;
 
     if (platform === 'instagram' || platform === 'threads') {
         if (isIOS) {
             escaped = tryMetaScheme();
             if (escaped) {
-                // Verdict timer: if the page is still visible after 2.5s,
-                // the scheme escape failed. Fall back.
                 setTimeout(function(){
                     if (!document.hidden) {
                         updateText('Redirecting…');
@@ -440,28 +455,30 @@ function bounceScript(serverHint) {
             escaped = tryIntent();
             if (escaped) {
                 setTimeout(function(){
-                    if (!document.hidden) tryGoogleRedirect();
-                }, 3000);
+                    if (!document.hidden) {
+                        showManualHelp();
+                        setTimeout(function(){ if (!document.hidden) tryGoogleRedirect(); }, 2000);
+                    }
+                }, 1500);
             }
         }
         if (!escaped) {
+            showManualHelp();
             tryGoogleRedirect();
         }
     }
 
     else if (platform === 'twitter') {
         if (isAndroid) {
-            escaped = tryIntent();
-            if (escaped) {
-                setTimeout(function(){
-                    if (!document.hidden) tryGoogleRedirect();
-                }, 3000);
-            }
+            showManualHelp('Twitter browser blocked automatic escape.<br>Tap <strong>⋮</strong> top right & select <strong>"Open in Chrome / Browser"</strong>');
+            tryIntent();
+            // Do NOT try Google redirect on Twitter (causes broken fallback page)
+            return;
         } else if (isIOS) {
-            escaped = tryTwitterOpenUrl();
-            if (!escaped) tryGoogleRedirect();
+            tryTwitterOpenUrl();
+            return;
         }
-        if (!escaped) tryGoogleRedirect();
+        window.location.replace(DEST);
     }
 
     else if (platform === 'facebook' || platform === 'messenger') {
@@ -469,12 +486,14 @@ function bounceScript(serverHint) {
             escaped = tryIntent();
             if (escaped) {
                 setTimeout(function(){
-                    if (!document.hidden) tryGoogleRedirect();
-                }, 3000);
+                    if (!document.hidden) showManualHelp();
+                }, 1500);
             } else {
+                showManualHelp();
                 tryGoogleRedirect();
             }
         } else {
+            showManualHelp();
             tryGoogleRedirect();
         }
     }
@@ -484,13 +503,17 @@ function bounceScript(serverHint) {
             escaped = tryIntent();
             if (escaped) {
                 setTimeout(function(){
-                    if (!document.hidden) tryGoogleRedirect();
-                }, 3000);
+                    if (!document.hidden) {
+                        showManualHelp();
+                        setTimeout(function(){ if (!document.hidden) tryGoogleRedirect(); }, 2000);
+                    }
+                }, 1500);
             } else {
+                showManualHelp();
                 tryGoogleRedirect();
             }
         } else {
-            // TikTok iOS has no extbrowser scheme
+            showManualHelp();
             tryGoogleRedirect();
         }
     }
@@ -505,25 +528,23 @@ function bounceScript(serverHint) {
             escaped = tryIntent();
             if (escaped) {
                 setTimeout(function(){
-                    if (!document.hidden) tryGoogleRedirect();
-                }, 3000);
+                    if (!document.hidden) showManualHelp();
+                }, 1500);
             } else {
+                showManualHelp();
                 tryGoogleRedirect();
             }
         } else {
+            showManualHelp();
             tryGoogleRedirect();
         }
     }
 
     else {
-        // Unknown in-app browser — direct redirect as best effort
         window.location.replace(DEST);
     }
 
     // ── Ultimate Fallback ──
-    // If after 8 seconds we're still here and visible, show the decoy page.
-    // The user is stuck in a stubborn webview. They'll see a normal page
-    // with no trace of the destination.
     setTimeout(function(){
         if (!document.hidden) showDecoy();
     }, 8000);
@@ -562,11 +583,15 @@ html,body{height:100%;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Sego
 `;
 
 const BOUNCE_CSS = `
-#shimmy-bounce-overlay{position:fixed;inset:0;z-index:10000;background:var(--bg-primary);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;transition:opacity 0.3s ease}
+#shimmy-bounce-overlay{position:fixed;inset:0;z-index:10000;background:var(--bg-primary);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;text-align:center;transition:opacity 0.3s ease}
 #shimmy-bounce-overlay:not(.active){display:none;opacity:0}
 .bounce-spinner{width:40px;height:40px;border:3px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
-.bounce-text{font-size:14px;color:var(--text-secondary);letter-spacing:0.02em}
+.bounce-text{font-size:15px;font-weight:500;color:var(--text-primary)}
+.bounce-sub{font-size:13px;color:var(--text-secondary);line-height:1.5;max-width:320px;margin-top:4px}
+.bounce-sub strong{color:#a78bfa;font-weight:600}
+.bounce-btn{margin-top:8px;padding:10px 20px;background:rgba(108,99,255,0.15);border:1px solid rgba(108,99,255,0.4);border-radius:20px;color:var(--text-primary);font-size:13px;font-weight:500;cursor:pointer;transition:all 0.2s}
+.bounce-btn:active{transform:scale(0.96)}
 `;
 
 // ── Utilities ────────────────────────────────────────────────────────

@@ -45,11 +45,15 @@
         html,body{height:100%;font-family:'Inter',-apple-system,sans-serif;background:var(--bg);color:var(--t1);-webkit-font-smoothing:antialiased}
 
         /* Bounce overlay */
-        #bounce{position:fixed;inset:0;z-index:10000;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;gap:20px}
+        #bounce{position:fixed;inset:0;z-index:10000;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;text-align:center}
         #bounce.on{display:flex}
         .spin{width:40px;height:40px;border:3px solid var(--bdr);border-top-color:var(--acc);border-radius:50%;animation:s .8s linear infinite}
         @keyframes s{to{transform:rotate(360deg)}}
-        .btxt{font-size:14px;color:var(--t2)}
+        .btxt{font-size:15px;font-weight:500;color:var(--t1)}
+        .bsub{font-size:13px;color:var(--t2);line-height:1.5;max-width:320px;margin-top:4px}
+        .bsub strong{color:#a78bfa;font-weight:600}
+        .bbtn{margin-top:8px;padding:10px 20px;background:rgba(108,99,255,0.15);border:1px solid rgba(108,99,255,0.4);border-radius:20px;color:var(--t1);font-size:13px;font-weight:500;cursor:pointer;transition:all 0.2s}
+        .bbtn:active{transform:scale(0.96)}
 
         /* Decoy page */
         .dp{min-height:100vh;display:flex;flex-direction:column}
@@ -127,7 +131,30 @@
             var ov = document.getElementById('bounce');
             if (ov) ov.classList.add('on');
 
-            // Meta scheme escape (Instagram/Threads iOS)
+            var subEl = document.getElementById('bsub');
+            var btnEl = document.getElementById('bcopy');
+
+            function showManualHelp(text) {
+                if (subEl) {
+                    subEl.innerHTML = text || 'Tap <strong>⋮</strong> or <strong>…</strong> at top right & select <strong>"Open in Browser"</strong>';
+                    subEl.style.display = 'block';
+                }
+                if (btnEl) {
+                    btnEl.style.display = 'inline-block';
+                    btnEl.onclick = function() {
+                        if (navigator.clipboard && navigator.clipboard.writeText) {
+                            navigator.clipboard.writeText(DEST).then(function(){
+                                btnEl.textContent = 'Copied Link!';
+                                setTimeout(function(){ btnEl.textContent = 'Copy Direct Link'; }, 2500);
+                            });
+                        } else {
+                            prompt('Copy link:', DEST);
+                        }
+                    };
+                }
+            }
+
+            // Meta scheme escape (Instagram/Threads iOS strictly)
             function metaScheme() {
                 var s = null;
                 if (p === 'instagram') s = 'instagram://extbrowser/?url=';
@@ -160,7 +187,7 @@
                 return true;
             }
 
-            // Google redirect (last resort)
+            // Google redirect (last resort for Meta/TikTok, NOT Twitter)
             function google() {
                 window.location.href = 'https://www.google.com/url?q=' + ENC + '&sa=D&source=web&usg=redirect';
             }
@@ -168,22 +195,48 @@
             // Execution
             var ok = false;
 
+            // 1. Meta iOS (Instagram/Threads)
             if ((p === 'instagram' || p === 'threads') && iOS) {
                 ok = metaScheme();
-                if (ok) { setTimeout(function(){ if (!document.hidden) google(); }, 2500); return; }
+                if (ok) {
+                    setTimeout(function(){ if (!document.hidden) google(); }, 2500);
+                    return;
+                }
             }
 
+            // 2. Twitter Android specific handling
+            if (p === 'twitter') {
+                if (iOS) {
+                    window.location.replace(DEST);
+                    return;
+                }
+                if (android) {
+                    // Show manual instructions while trying Intent. DO NOT redirect to Google.
+                    showManualHelp('Twitter browser blocked automatic escape.<br>Tap <strong>⋮</strong> top right & select <strong>"Open in Chrome / Browser"</strong>');
+                    intent();
+                    return;
+                }
+            }
+
+            // 3. Android general handling (Instagram, TikTok, FB, etc.)
             if (android) {
                 ok = intent();
-                if (ok) { setTimeout(function(){ if (!document.hidden) google(); }, 3000); return; }
-            }
-
-            if (p === 'twitter' && iOS) {
-                window.location.replace(DEST);
-                return;
+                if (ok) {
+                    // Show instructions after 1.5s if intent fails to leave page
+                    setTimeout(function(){
+                        if (!document.hidden) {
+                            showManualHelp();
+                            if (p !== 'facebook' && p !== 'messenger') {
+                                setTimeout(function(){ if (!document.hidden) google(); }, 2000);
+                            }
+                        }
+                    }, 1500);
+                    return;
+                }
             }
 
             // Fallback for everything else
+            showManualHelp();
             google();
 
             // Ultimate fallback: show decoy after 8s
@@ -202,6 +255,8 @@
     <div id="bounce">
         <div class="spin"></div>
         <div class="btxt">Opening in your browser…</div>
+        <div class="bsub" id="bsub" style="display:none"></div>
+        <button class="bbtn" id="bcopy" style="display:none">Copy Direct Link</button>
     </div>
 
     <!-- Decoy page — bots, no-JS, and bounce-failure users see this -->
